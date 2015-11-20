@@ -1,0 +1,195 @@
+---
+title: "On effect of transmission type on mpg"
+author: "Jan Herman"
+date: "November 22, 2015"
+output: pdf_document
+geometry: margin=1.8cm
+---
+
+\vspace{-1cm}
+## Overview
+\vspace{-.1cm}
+The goal of this short analysis is to determine wheter the transmission
+type has the effect the car fuel efficiency. If so, we aim to quantify
+this effect by means of mpg difference.
+
+\vspace{-.3cm}
+## Explaining the dataset
+\vspace{-.1cm}
+In this analysis we work with the `mtcars` dataset shipped with
+the R language. It contains 11 variables describing a total of 32
+different cars. The following table summarizes the meaning of
+these variables:
+
+| Variable | Description                     | Variable | Description                                   |
+| -------- | --------------------------------| -------- | --------------------------------------------- |
+| `mpg`    | fuel economy [miles per gallon] | `qsec`   | 1/4 mile time [sec]                           |
+| `cyl`    | number of cylinders             | `vs`     | engine type (0 = vee, 1 = straight)           |
+| `disp`   | engine displacement [in$^2$]    | `am`     | transmission type (0 = automatic, 1 = manual) |
+| `hp`     | engine gross horsepower [hp]    | `gear`   | number of forward gears                       |
+| `drat`   | rear axle ratio                 | `carb`   | number of carburetors                         |
+| `wt`     | car weight [lb/1000]            |
+
+\vspace{-.4cm}
+## Goal and applied method
+\vspace{-.1cm}
+Our goal is to quantify the effect of the transmission type on the
+fuel economy. We will try to find the most appropriate multivariable
+linear model describing the relationship between `mpg` variable and
+some of the other variables including `am`. The coefficient of
+the `am` variable in this model will then mean the effect of
+the transmission type on the fuel economy measured in mpg.
+
+In order to make an analysis as precise as possible, we have to
+preproccess the dataset a little -- we will convert variables that
+have only a few integer values into factors. This involves variables
+`cyl`, `gear`, `carb`, `am` and `vs`. For the last two is this
+transformation unnecessary in means of the linear reggression 
+(these variables have only two different values -- 0 and 1, thus
+turning them into factors does not change the reggression model
+at all).
+
+```{r echo=FALSE, message=FALSE}
+library(ggplot2)
+library(knitr)
+library(dplyr)
+data("mtcars")
+mtcars_factors <- mutate(mtcars, 
+                         cyl = factor(cyl),
+                         gear = factor(gear),
+                         carb = factor(carb),
+                         am = factor(am, 
+                                     labels = c("automatic",
+                                                "manual")),
+                         vs = factor(vs, 
+                                     labels = c("vee", "straight")))
+```
+
+
+## Choosing the model
+\vspace{-.1cm}
+This is the most tricky part of the entire analysis. We want to
+have our model as simple as possible and at the same time it
+should estimate the `mpg` variable well enough. Especially we
+want to remove a majority effect of "skewness" of the data.
+In order to achive this we at first analyze the covariances of
+all pairs of the variables. The following table present those.
+
+```{r echo=FALSE}
+cor_matrix <- cor(mtcars)
+kable(round(cor_matrix, 3))
+```
+
+
+We will build a sequence of nested linear models having `mpg`
+variable as outcome. The first model will be just the constant
+model, the second one the simple linear regression on `am`.
+Now we order the remaining variables in descending order with
+respect to the absolute value of covariance with the outcome
+varible `mpg` and add them successively to the model.
+
+```{r echo=FALSE}
+ordering_permutation <- order(abs(cor_matrix[1, ]),
+                              decreasing = TRUE)
+var_names <- colnames(mtcars)[ordering_permutation]
+var_names <- var_names[-which(var_names %in% c("mpg", "am"))]
+var_names <- c("am", var_names)
+fits <- list(lm(mpg ~ 1, data = mtcars_factors))
+for (i in 1:length(var_names)){
+    formula_string <- paste("mpg ~ ",
+                            paste(var_names[1:i],
+                                  collapse = " + "),
+                            sep = "")
+    fit <- lm(eval(parse(text = formula_string)), 
+              data = mtcars_factors)
+    fits <- c(fits, list(fit))
+}
+```
+
+We end with 11 different models -- the first one is the constant
+model, then in each step we add one variable to the predictors
+in the following order: ``r var_names``.
+
+Now we make an analysis of variance on these nested models in order
+to determine predictors that we want to keep in the model and those
+we want to exclude.
+
+```{r echo=FALSE}
+models_anova <- do.call(anova, fits)
+kable(cbind(`Added predictor` = c(NA, var_names),
+            round(models_anova, 3)))
+reduced_predictors <- var_names[(models_anova$F > 1)[-1]]
+formula_string <- paste("mpg ~ ",
+                        paste(reduced_predictors, collapse = " + "),
+                        sep = "")
+```
+
+If we keep only predictors with $F$-statistic greater than one 
+(there is a large gap) and exclude the others, we end with the 
+model ``r formula_string``:
+
+```{r echo=FALSE}
+reduced_model <- lm(eval(parse(text = formula_string)),
+                    data = mtcars_factors)
+kable(summary(reduced_model)$coefficients)
+formula_string <- paste("mpg ~ ",
+                        paste(reduced_predictors
+                              [-which(reduced_predictors == "cyl")],
+                              collapse = " + "),
+                        sep = "")
+```
+
+Finally we exclude the `cyl` predictor since its effect is not
+monotonous and the $p$-value for the 8 cylinder is too high.
+The final model thus has the formula ``r formula_string`` and
+its summary is as follows:
+
+```{r echo=FALSE}
+final_model <- lm(eval(parse(text = formula_string)),
+                    data = mtcars_factors)
+kable(summary(final_model)$coefficients)
+```
+
+\vspace{-.6cm}
+## Conclusion
+From the table above we see that the $p$-value associated with
+the `am` regressor is greater than 0.05, and so we
+failed to reject the hypotheses that the type of trasmission
+has the impact on car fuel efficiency at 95% confidence level.
+However the data suggests that the hypothesis might be valid,
+so we higly recommend to collect more data to confirm
+it definitely.
+
+The second proposed question about the quantification of the
+effect of the transmission type is thus meaningless. We hope
+that the following analysis on larger data will prove our
+hypotheses that manual transmissions are better for fuel
+efficiency by approximately 2 mpg.
+
+\pagebreak
+
+## Apendix
+
+We present only one figure -- the matrix of one variable
+linear regressions together with covariances of each pair
+of variables. In the main part it was replaced by covariance
+table as it covers less space.
+
+```{r message=FALSE, cache=TRUE, fig.width=8, fig.height=7}
+library(GGally)
+ggpairs(mtcars, 
+        upper = list(params = list(size = 3)),
+        lower = list(continuous = "smooth"))
+```
+
+## Notice
+The knitr source code of this analysis including dirty tricks
+to fit the main part on 2 pages is available at
+[github](https://github.com/hermitko/RegMods_CourseProject).
+
+```{r echo=FALSE}
+# Dirty tricks not to outreach 2 pages:
+# 1) page margins set in knitr yaml header
+# 2) 1st level headers unused - 2nd level instead
+# 3) some negative vspaces added
+```
