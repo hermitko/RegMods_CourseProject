@@ -7,20 +7,28 @@ geometry: margin=1.8cm
 ---
 
 \vspace{-1cm}
-## Overview
-\vspace{-.1cm}
+## Executive summary
+\vspace{-.2cm}
 The goal of this short analysis is to determine wheter the transmission
 type has the effect the car fuel efficiency. If so, we aim to quantify
 this effect by means of mpg difference.
 
-\vspace{-.3cm}
+We showed that the effect of transmission type on fuel efficiency
+is not statistically significant based on the given data. However
+the data suggests that cars with manual transmission might have
+about 2 mpg better fuel efficiency compared to cars with automatic one.
+We strongly recommend to collect more data in order to accept 
+this hypothesis.
+
+\vspace{-.4cm}
 ## Explaining the dataset
-\vspace{-.1cm}
+\vspace{-.2cm}
 In this analysis we work with the `mtcars` dataset shipped with
 the R language. It contains 11 variables describing a total of 32
 different cars. The following table summarizes the meaning of
 these variables:
 
+\vspace{-.2cm}
 | Variable | Description                     | Variable | Description                                   |
 | -------- | --------------------------------| -------- | --------------------------------------------- |
 | `mpg`    | fuel economy [miles per gallon] | `qsec`   | 1/4 mile time [sec]                           |
@@ -30,9 +38,9 @@ these variables:
 | `drat`   | rear axle ratio                 | `carb`   | number of carburetors                         |
 | `wt`     | car weight [lb/1000]            |
 
-\vspace{-.4cm}
+\vspace{-.6cm}
 ## Goal and applied method
-\vspace{-.1cm}
+\vspace{-.2cm}
 Our goal is to quantify the effect of the transmission type on the
 fuel economy. We will try to find the most appropriate multivariable
 linear model describing the relationship between `mpg` variable and
@@ -65,7 +73,7 @@ mtcars_factors <- mutate(mtcars,
                                      labels = c("vee", "straight")))
 ```
 
-
+\vspace{-.6cm}
 ## Choosing the model
 \vspace{-.1cm}
 This is the most tricky part of the entire analysis. We want to
