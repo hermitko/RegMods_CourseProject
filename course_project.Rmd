@@ -73,9 +73,9 @@ mtcars_factors <- mutate(mtcars,
                                      labels = c("vee", "straight")))
 ```
 
-\vspace{-.6cm}
+\vspace{-.4cm}
 ## Choosing the model
-\vspace{-.1cm}
+\vspace{-.2cm}
 This is the most tricky part of the entire analysis. We want to
 have our model as simple as possible and at the same time it
 should estimate the `mpg` variable well enough. Especially we
@@ -135,6 +135,7 @@ formula_string <- paste("mpg ~ ",
                         sep = "")
 ```
 
+\vspace{-.3cm}
 If we keep only predictors with $F$-statistic greater than one 
 (there is a large gap) and exclude the others, we get the 
 model described by the formula ``r formula_string``:
@@ -150,6 +151,7 @@ formula_string <- paste("mpg ~ ",
                         sep = "")
 ```
 
+\vspace{-.3cm}
 Finally we exclude the `cyl` predictor since its effect is not
 monotonous and the $p$-value for the 8 cylinder is too high.
 The final model thus has the formula ``r formula_string`` and
@@ -161,8 +163,9 @@ final_model <- lm(eval(parse(text = formula_string)),
 kable(summary(final_model)$coefficients)
 ```
 
-\vspace{-.6cm}
+\vspace{-.7cm}
 ## Conclusion
+\vspace{-.2cm}
 From the table above we see that the $p$-value associated with
 the `am` regressor is greater than 0.05, and so we
 failed to reject the null hypotheses that the type of trasmission
@@ -173,9 +176,14 @@ it definitely.
 
 The second proposed question about the quantification of the
 effect of the transmission type is thus meaningless. We hope
-that the following analysis on larger data will prove our
+that the further analysis on larger data will prove our
 hypotheses that manual transmissions are better for fuel
 efficiency by approximately 2 mpg.
+
+Also the residual plots in the appendix suggests that we do
+not take into accounts some of the car properties having
+an effect on the fuel efficiency. We thus recommend to try
+to find those.
 
 \pagebreak
 
