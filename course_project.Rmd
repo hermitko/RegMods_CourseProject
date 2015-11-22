@@ -71,7 +71,7 @@ mtcars_factors <- mutate(mtcars,
 This is the most tricky part of the entire analysis. We want to
 have our model as simple as possible and at the same time it
 should estimate the `mpg` variable well enough. Especially we
-want to remove a majority effect of "skewness" of the data.
+want to remove a majority of effect of "skewness" of the data.
 In order to achive this we at first analyze the covariances of
 all pairs of the variables. The following table present those.
 
@@ -80,13 +80,16 @@ cor_matrix <- cor(mtcars)
 kable(round(cor_matrix, 3))
 ```
 
-
 We will build a sequence of nested linear models having `mpg`
 variable as outcome. The first model will be just the constant
 model, the second one the simple linear regression on `am`.
 Now we order the remaining variables in descending order with
 respect to the absolute value of covariance with the outcome
-varible `mpg` and add them successively to the model.
+varible `mpg` and add them successively to the model. The residual
+plots of all of the models are presented in the Appendix [since
+all the models have different predictors we decided to plot
+on x-axis the row number in `mtcars` dataset corresponding
+to the residual].
 
 ```{r echo=FALSE}
 ordering_permutation <- order(abs(cor_matrix[1, ]),
@@ -125,8 +128,8 @@ formula_string <- paste("mpg ~ ",
 ```
 
 If we keep only predictors with $F$-statistic greater than one 
-(there is a large gap) and exclude the others, we end with the 
-model ``r formula_string``:
+(there is a large gap) and exclude the others, we get the 
+model described by the formula ``r formula_string``:
 
 ```{r echo=FALSE}
 reduced_model <- lm(eval(parse(text = formula_string)),
@@ -154,8 +157,8 @@ kable(summary(final_model)$coefficients)
 ## Conclusion
 From the table above we see that the $p$-value associated with
 the `am` regressor is greater than 0.05, and so we
-failed to reject the hypotheses that the type of trasmission
-has the impact on car fuel efficiency at 95% confidence level.
+failed to reject the null hypotheses that the type of trasmission
+has no impact on car fuel efficiency at 95% confidence level.
 However the data suggests that the hypothesis might be valid,
 so we higly recommend to collect more data to confirm
 it definitely.
@@ -170,16 +173,63 @@ efficiency by approximately 2 mpg.
 
 ## Apendix
 
-We present only one figure -- the matrix of one variable
+At first present one figure -- the matrix of one variable
 linear regressions together with covariances of each pair
 of variables. In the main part it was replaced by covariance
 table as it covers less space.
 
-```{r message=FALSE, cache=TRUE, fig.width=8, fig.height=7}
+```{r echo=FALSE, message=FALSE, cache=TRUE, fig.width=7.4, fig.height=7}
 library(GGally)
 ggpairs(mtcars, 
         upper = list(params = list(size = 3)),
         lower = list(continuous = "smooth"))
+```
+
+\pagebreak
+Next come the residual plots of all the nested models:
+
+```{r echo=FALSE, fig.width=7.4, fig.height=9.7}
+library(grid)
+grid.newpage()
+pushViewport(viewport(
+    layout = grid.layout(nrow = (length(fits) + 1) %/% 2,
+                         ncol = 2)))
+for (i in 1:length(fits)){
+    g <- ggplot() +
+        aes(x = 1:nrow(mtcars), y = fits[[i]]$residuals) +
+        geom_point() +
+        labs(x = "Car number", y = "mpg residuals") +
+        ggtitle(deparse(formula(fits[[i]]))) +
+        theme(plot.title = element_text(size = rel(.75)),
+              plot.margin = unit(c(0, 0.5, 0.5, 0.5), "cm"),
+              axis.title.x = element_text(size = rel(.75))) 
+    print(g, 
+          vp = viewport(layout.pos.row = (i + 1) %/% 2,
+                        layout.pos.col = (i - 1) %% 2 + 1)
+    )
+}
+    
+```
+
+\pagebreak
+And finally the residual plots for the reduced and final model:
+
+```{r echo=FALSE, fig.width=7.4}
+ggplot() +
+    aes(x = 1:nrow(mtcars), y = reduced_model$residuals) +
+    geom_point() +
+    labs(x = "Car number", y = "mpg residuals") +
+    ggtitle(deparse(formula(reduced_model)))
+    
+```
+
+```{r echo=FALSE, fig.width=7.4}
+ggplot() +
+    aes(x = 1:nrow(mtcars), y = final_model$residuals) +
+    geom_point() +
+    labs(x = "Car number", y = "mpg residuals") +
+    ggtitle(deparse(formula(final_model)))
+    
 ```
 
 ## Notice
